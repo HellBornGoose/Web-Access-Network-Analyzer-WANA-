@@ -68,7 +68,7 @@ BEGIN{
     if(a != "" && raw_time < time_a) next
     if(b != "" && raw_time > time_b) next
     if(ip != "" && $1 != ip) next
-    if(uri != "" && index($7, uri) == 0) next
+    if(uri != "" && $7 !~ uri) next
     print $0
 }
 ' 2>/dev/null | 
@@ -77,11 +77,10 @@ if [ "$cmd" = "list-ip" ]; then
 elif [ "$cmd" = "list-hosts" ]; then
     awk '{print $1}' | sort | uniq |
     while read -r ip; do
-        res=$(host "$ip" 2>/dev/null)
-        if echo "$res" | grep -q "not found"; then
-            echo "$ip"
+        if res=$(host "$ip" 2>/dev/null); then
+            echo "$res" | awk '{print $NF}'
         else
-            echo "$res" | awk '{sub(/\.$/, "", $NF); print $NF}'
+            echo "$ip"
         fi
     done
 elif [ "$cmd" = "list-uri" ]; then 
@@ -102,6 +101,8 @@ elif [ "$cmd" = "hist-load" ]; then
     }' |
     sort | uniq -c |
     awk '{printf "%s %s (%d): ", $2, $3, $1; for (i = 0; i < $1; i++){printf "#"}; print ""}'
+elif [ -z "$cmd" ]; then
+    cat
 else
     echo "Error: unknown command '$cmd'" >&2
     exit 1
